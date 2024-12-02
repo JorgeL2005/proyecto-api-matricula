@@ -1,0 +1,115 @@
+org: jorgeleonv
+service: proyecto-api-matricula
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  memorySize: 1024
+  timeout: 29 # Reducido para cumplir con API Gateway
+  iam:
+    role: arn:aws:iam::831178165254:role/LabRole
+  environment:
+    TABLE_NAME: ${sls:stage}-t_matriculas # Nombre dinámico de la tabla DynamoDB
+
+functions:
+  RegistrarMatricula:
+    handler: RegistrarMatricula.handler
+    name: ${sls:stage}-RegistrarMatricula
+    events:
+      - http:
+          path: /matriculas/registrar
+          method: post
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: |
+                {
+                  "method": "$context.httpMethod",
+                  "path": "$context.path",
+                  "headers": {
+                    "Authorization": "$input.params('Authorization')"
+                  },
+                  "body": $input.body
+                }
+
+  ConsultaMatricula:
+    handler: ConsultaMatricula.handler
+    name: ${sls:stage}-ConsultaMatricula
+    events:
+      - http:
+          path: /matriculas/consultar
+          method: post
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: |
+                {
+                  "method": "$context.httpMethod",
+                  "path": "$context.path",
+                  "headers": {
+                    "Authorization": "$input.params('Authorization')"
+                  },
+                  "body": $input.body
+                }
+
+  ActualizarMatricula:
+    handler: ActualizarMatricula.handler
+    name: ${sls:stage}-ActualizarMatricula
+    events:
+      - http:
+          path: /matriculas/actualizar
+          method: put
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: |
+                {
+                  "method": "$context.httpMethod",
+                  "path": "$context.path",
+                  "headers": {
+                    "Authorization": "$input.params('Authorization')"
+                  },
+                  "body": $input.body
+                }
+
+  EliminarMatricula:
+    handler: EliminarMatricula.handler
+    name: ${sls:stage}-EliminarMatricula
+    events:
+      - http:
+          path: /matriculas/eliminar
+          method: delete
+          cors: true
+          integration: lambda
+          request:
+            template:
+              application/json: |
+                {
+                  "method": "$context.httpMethod",
+                  "path": "$context.path",
+                  "headers": {
+                    "Authorization": "$input.params('Authorization')"
+                  },
+                  "body": $input.body
+                }
+
+resources:
+  Resources:
+    TablaMatriculas:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: tenant_id#user_id
+            AttributeType: S
+          - AttributeName: periodo
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tenant_id#user_id
+            KeyType: HASH
+          - AttributeName: periodo
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST # Facturación basada en uso
